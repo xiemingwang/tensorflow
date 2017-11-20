@@ -1,4 +1,4 @@
-# -tensorflow-
+# tensorflow
 如何使用tensorflow训练图片
 
 训练环境（ubuntu 16.04）：
