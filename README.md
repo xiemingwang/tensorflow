@@ -174,6 +174,67 @@ underground_corridor_val.record
 运行看板程序
 >tensorboard --logdir=~/underground_corridor
 现在，在其它电脑上可以用 http://<ip>:6006 打开网页，实时监控训练进程。
+ 
+导出Tensorflow训练好的模型
+ 当训练完你的模型之后,应该将其导出到一个原型Tensorflow图。通常需要检查三个文件：
+ - model.ckpt-${CHECKPOINT_NUMBER}.data-00000-of-00001,
+ - model.ckpt-${CHECKPOINT_NUMBER}.index
+ - model.ckpt-${CHECKPOINT_NUMBER}.meta
+ 这三份文件放在~/underground_corridor/train，该目录示例如下：
+> ls -1 ~/underground_corridor/train/
+-rw-rw-r-- 1 gzdev gzdev       517 11月 18 09:20 checkpoint
+-rw-rw-r-- 1 gzdev gzdev 493291692 11月 18 09:20 events.out.tfevents.1510912234.gzdev
+-rw-rw-r-- 1 gzdev gzdev  16592471 11月 17 17:50 graph.pbtxt
+-rw-rw-r-- 1 gzdev gzdev 438764272 11月 18 08:40 model.ckpt-191343.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     40511 11月 18 08:40 model.ckpt-191343.index
+-rw-rw-r-- 1 gzdev gzdev   8691234 11月 18 08:40 model.ckpt-191343.meta
+-rw-rw-r-- 1 gzdev gzdev 438764272 11月 18 08:50 model.ckpt-193543.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     40511 11月 18 08:50 model.ckpt-193543.index
+-rw-rw-r-- 1 gzdev gzdev   8691234 11月 18 08:50 model.ckpt-193543.meta
+-rw-rw-r-- 1 gzdev gzdev 438764272 11月 18 09:00 model.ckpt-195734.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     40511 11月 18 09:00 model.ckpt-195734.index
+-rw-rw-r-- 1 gzdev gzdev   8691234 11月 18 09:00 model.ckpt-195734.meta
+-rw-rw-r-- 1 gzdev gzdev 438764272 11月 18 09:10 model.ckpt-197873.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     40511 11月 18 09:10 model.ckpt-197873.index
+-rw-rw-r-- 1 gzdev gzdev   8691234 11月 18 09:10 model.ckpt-197873.meta
+-rw-rw-r-- 1 gzdev gzdev 438764272 11月 18 09:20 model.ckpt-200000.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     40511 11月 18 09:20 model.ckpt-200000.index
+-rw-rw-r-- 1 gzdev gzdev   8691234 11月 18 09:20 model.ckpt-200000.meta
+-rw-rw-r-- 1 gzdev gzdev      3936 11月 17 17:50 pipeline.config
+开始导出
+$ cd ~/tensorflow/models/research
+$ python object_detection/export_inference_graph.py \
+--input_type image_tensor \
+--pipeline_config_path ~/underground_corridor/data/faster_rcnn_resnet101_underground_corridors.config \
+--trained_checkpoint_prefix ~/underground_corridor/train/model.ckpt-200000 \
+--output_directory ~/underground_corridor/out/
+
+导出的out目录示例如下：
+> ls -1 ~/underground_corridor/out/
+-rw-rw-r-- 1 gzdev gzdev        77 11月 20 11:13 checkpoint
+-rw-rw-r-- 1 gzdev gzdev 190446830 11月 20 11:13 frozen_inference_graph.pb
+-rw-rw-r-- 1 gzdev gzdev 249567356 11月 20 11:13 model.ckpt.data-00000-of-00001
+-rw-rw-r-- 1 gzdev gzdev     25713 11月 20 11:13 model.ckpt.index
+-rw-rw-r-- 1 gzdev gzdev   2636006 11月 20 11:13 model.ckpt.meta
+drwxr-xr-x 3 gzdev gzdev      4096 11月 19 17:38 saved_model/
+其中frozen_inference_graph.pb为我们的目标文件。
+
+使用Tensorflow导出的模型识别图片
+一下操作可在ssh中操作
+$ sudo apt-get install protobuf-compiler -y
+$ cd ~/tensorflow/models/research
+$ protoc object_detection/protos/*.proto --python_out=.
+$ cd ~
+$ git clone https://github.com/qdraw/tensorflow-object-detection-tutorial.git 
+$ cd tensorflow-object-detection-tutorial
+$ chmod +x install.opencv.ubuntu.sh
+$ ./install.opencv.ubuntu.sh
+$ cp ~/underground_corridor/out/frozen_inference_graph.pb ~/tensorflow-object-detection-tutorial/ssd_mobilenet_v1_coco_11_06_2017
+$cp ~/underground_corridor/train/underground_corridor_label_map.pbtxt ~/tensorflow-object-detection-tutorial/data
+
+下面命令行在vnc中开始识别
+$ python image_object_detection.py 
+
   
 Reference
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/running_pets.md
